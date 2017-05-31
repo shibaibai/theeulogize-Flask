@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "_macros.html" as macros %}
+
+{% block title %}theeulogize - {{ posts[0].title }}{% endblock %}
+
+{% block page_content %}
+<ul class="posts">
+    {% for post in posts %}
+    <li class="post">
+            <div class="post-thumbnail">
+                <a href="{{ url_for('.user', username=post.author.username) }}">
+                    <img class="img-rounded profile-thumbnail" src="{{ post.author.gravatar(size=40) }}">
+                </a>
+            </div>
+            <div class="post-content">
+                <div class="post-date">
+                    {% if post.change_time != None %}
+                        最后修改于{{ moment(post.change_time).fromNow() }}
+                    {% else %}
+                        {{ moment(post.timestamp).fromNow() }}
+                    {% endif %}
+                </div>
+                <div class="post-author"><a href="{{ url_for('.user', username=post.author.username) }}">{{ post.author.username }}</a></div>
+                <div class="post-title"><h1>{{ post.title }}</h1></div>
+                <div class="post-body">
+                    {% if post.body_html %}
+                        {{ post.body_html | safe }}
+                    {% else %}
+                        {{ post.body }}
+                    {% endif %}
+                </div>
+                <div class="post-footer">
+                    {% if current_user == post.author %}
+                    <a href="{{ url_for('.edit', id=post.id) }}", style="text-decoration:none">
+                        <span class="label label-primary">编辑</span>
+                    </a>
+                    {% elif current_user.is_administrator() %}
+                    <a href="{{ url_for('.edit', id=post.id) }}", style="text-decoration:none">
+                        <span class="label label-danger">编辑 [Admin]</span>
+                    </a>
+                    {% endif %}
+                    <span class="label label-primary", style="text-decoration:none">{{ post.comments.count() }} 回复</span>
+                </div>
+            </div>
+         </a>
+    </li>
+    {% endfor %}
+</ul>
+<h4 id="comments">评论</h4>
+{% if current_user.is_authenticated %}
+    <div class="comment-form">
+        <form method="POST">
+            {{ wtf.quick_form(form) }}
+        </form>
+    </div>
+{% else %}
+    <p>登录后，方可回复 <a href="{{ url_for('auth.login') }}">点击这里登录</a></p>
+{% endif %}
+
+{% include '_comments.html' %}
+{% if pagination %}
+<div class="pagination">
+    {{ macros.pagination_widget(pagination, '.post', fragment='#comments', id=posts[0].id) }}
+</div>
+{% endif %}
+{% endblock %}}
+
+{% block scripts %}
+{{ super() }}
+{{ pagedown.include_pagedown() }}
+{% endblock %}
